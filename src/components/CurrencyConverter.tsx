@@ -228,12 +228,15 @@ export default function CurrencyConverter() {
             <div className="rate-badge">
               <TrendingUp className="w-4 h-4" />
               <span>
-                1 {fromCurrency} = {rate.toFixed(4)} {toCurrency}
+                1 {fromCurrency} = {rate.toFixed(5)} {toCurrency}
               </span>
             </div>
             <span className="text-xs text-muted-foreground">
               Mid-market rate
             </span>
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground text-center">
+            1 евро струва 1.95583
           </div>
         </motion.div>
 
