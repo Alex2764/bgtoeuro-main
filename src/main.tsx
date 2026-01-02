@@ -6,8 +6,22 @@ import "./index.css";
 // Initialize Capacitor plugins
 if (Capacitor.isNativePlatform()) {
   import("@capacitor/status-bar").then(({ StatusBar }) => {
-    StatusBar.setStyle({ style: "dark" });
-    StatusBar.setBackgroundColor({ color: "#ffffff" });
+    // Check initial theme preference
+    const isDark = document.documentElement.classList.contains("dark");
+    StatusBar.setStyle({ style: isDark ? "light" : "dark" });
+    StatusBar.setBackgroundColor({ color: isDark ? "#1a1f2e" : "#ffffff" });
+
+    // Watch for theme changes
+    const observer = new MutationObserver(() => {
+      const isDarkNow = document.documentElement.classList.contains("dark");
+      StatusBar.setStyle({ style: isDarkNow ? "light" : "dark" });
+      StatusBar.setBackgroundColor({ color: isDarkNow ? "#1a1f2e" : "#ffffff" });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
   });
 }
 

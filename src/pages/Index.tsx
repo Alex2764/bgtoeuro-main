@@ -1,4 +1,5 @@
 import CurrencyConverter from '@/components/CurrencyConverter';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Coins } from 'lucide-react';
 
 const Index = () => {
@@ -11,12 +12,17 @@ const Index = () => {
       </div>
 
       <div className="max-w-lg mx-auto">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="p-3 rounded-2xl bg-gradient-primary shadow-glow">
-            <Coins className="w-8 h-8 text-primary-foreground" />
+        {/* Logo with Theme Toggle */}
+        <div className="flex items-center justify-between gap-3 mb-8 px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-gradient-primary shadow-glow">
+              <Coins className="w-8 h-8 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold text-foreground">ExchangeNow</span>
           </div>
-          <span className="text-xl font-bold text-foreground">ExchangeNow</span>
+          <div className="bg-background/80 backdrop-blur-sm rounded-full p-1 shadow-lg border border-border/50">
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Converter */}

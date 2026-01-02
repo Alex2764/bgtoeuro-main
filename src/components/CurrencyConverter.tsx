@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowUpDown, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Currency {
   code: string;
@@ -33,13 +34,60 @@ export default function CurrencyConverter() {
   const [amount, setAmount] = useState<string>('100');
   const [fromCurrency, setFromCurrency] = useState<string>('EUR');
   const [toCurrency, setToCurrency] = useState<string>('BGN');
-  const [convertedAmount, setConvertedAmount] = useState<number>(0);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  const animationRef = useRef<number | null>(null);
+  const prevValueRef = useRef<number>(0);
 
+  // Calculate conversion
+  const numAmount = parseFloat(amount) || 0;
+  const convertedAmount = convertCurrency(numAmount, fromCurrency, toCurrency);
+
+  // Animate the counter
   useEffect(() => {
-    const numAmount = parseFloat(amount) || 0;
-    setConvertedAmount(convertCurrency(numAmount, fromCurrency, toCurrency));
-  }, [amount, fromCurrency, toCurrency]);
+    // Cancel any ongoing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    const startValue = prevValueRef.current;
+    const endValue = convertedAmount;
+    const duration = 400;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const currentValue = startValue + (endValue - startValue) * eased;
+      
+      setDisplayValue(currentValue);
+      
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(endValue);
+        prevValueRef.current = endValue;
+        animationRef.current = null;
+      }
+    };
+    
+    animationRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [convertedAmount]);
+
+  // Update prevValueRef when animation completes
+  useEffect(() => {
+    prevValueRef.current = displayValue;
+  }, [displayValue]);
 
   const handleSwap = () => {
     setIsSwapping(true);
@@ -54,21 +102,49 @@ export default function CurrencyConverter() {
   const toCurrencyData = currencies.find(c => c.code === toCurrency)!;
   const rate = getExchangeRate(fromCurrency, toCurrency);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.4, 0, 0.2, 1] as const,
+      },
+    },
+  };
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="currency-card p-6 sm:p-8">
+    <motion.div
+      className="w-full max-w-md mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <motion.div className="currency-card p-6 sm:p-8" variants={itemVariants}>
         {/* Header */}
-        <div className="text-center mb-8">
+        <motion.div className="text-center mb-8" variants={itemVariants}>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             Currency Converter
           </h1>
           <p className="text-muted-foreground text-sm">
             Fast & accurate exchange rates
           </p>
-        </div>
+        </motion.div>
 
         {/* From Currency */}
-        <div className="space-y-6">
+        <motion.div className="space-y-6" variants={itemVariants}>
           <div className="currency-input-wrapper p-4">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
               From
@@ -100,7 +176,10 @@ export default function CurrencyConverter() {
           </div>
 
           {/* Swap Button */}
-          <div className="flex justify-center -my-2 relative z-10">
+          <motion.div
+            className="flex justify-center -my-2 relative z-10"
+            variants={itemVariants}
+          >
             <button
               onClick={handleSwap}
               className={`swap-button ${isSwapping ? 'animate-swap' : ''}`}
@@ -108,10 +187,10 @@ export default function CurrencyConverter() {
             >
               <ArrowUpDown className="w-5 h-5" />
             </button>
-          </div>
+          </motion.div>
 
           {/* To Currency */}
-          <div className="currency-input-wrapper p-4">
+          <motion.div className="currency-input-wrapper p-4" variants={itemVariants}>
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
               To
             </label>
@@ -129,10 +208,10 @@ export default function CurrencyConverter() {
                 ))}
               </select>
               <div className="w-full text-right">
-                <span className="text-2xl sm:text-3xl font-mono font-bold text-foreground animate-fade-in">
-                  {convertedAmount.toLocaleString('en-US', {
-                    minimumFractionDigits: 5,
-                    maximumFractionDigits: 5,
+                <span className="text-2xl sm:text-3xl font-mono font-bold text-foreground">
+                  {displayValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })}
                 </span>
               </div>
@@ -140,14 +219,14 @@ export default function CurrencyConverter() {
             <p className="text-xs text-muted-foreground mt-2">
               {toCurrencyData.name}
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Exchange Rate */}
-        <div className="mt-6 pt-6 border-t border-border">
+        <motion.div className="mt-6 pt-6 border-t border-border" variants={itemVariants}>
           <div className="flex items-center justify-between">
             <div className="rate-badge">
-              <TrendingUp className="w-4 h-4 text-currency-gold" />
+              <TrendingUp className="w-4 h-4" />
               <span>
                 1 {fromCurrency} = {rate.toFixed(4)} {toCurrency}
               </span>
@@ -156,10 +235,10 @@ export default function CurrencyConverter() {
               Mid-market rate
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick Amount Buttons */}
-        <div className="mt-6 flex flex-wrap gap-2 justify-center">
+        <motion.div className="mt-6 flex flex-wrap gap-2 justify-center" variants={itemVariants}>
           {[5, 10, 50, 100, 500, 1000].map((quickAmount) => (
             <button
               key={quickAmount}
@@ -173,13 +252,16 @@ export default function CurrencyConverter() {
               {quickAmount}
             </button>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Info Note */}
-      <p className="text-center text-xs text-muted-foreground mt-4 px-4">
+      <motion.p
+        className="text-center text-xs text-muted-foreground mt-4 px-4"
+        variants={itemVariants}
+      >
         Note: BGN is pegged to EUR at a fixed rate of 1.9558
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
   );
 }
